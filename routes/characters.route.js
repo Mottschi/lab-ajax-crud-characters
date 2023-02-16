@@ -1,4 +1,5 @@
 const router = require('express').Router()
+const { isValidObjectId } = require('mongoose');
 const Character = require('../models/Character.model')
 /**
  * !All the routes here are prefixed with /api/characters
@@ -24,11 +25,10 @@ router.get('/', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
 	try {
 		const { name, occupation, cartoon, weapon } = req.body;
-
 		const errorMessages = [];
 		if (!name) errorMessages.push('name');
 		if (!occupation) errorMessages.push('occupation');
-		if (!cartoon || typeof cartoon !== boolean) errorMessages.push('cartoon');
+		if (cartoon === undefined) errorMessages.push('cartoon');
 		if (!weapon) errorMessages.push('weapon');
 		if (errorMessages.length) return res.send(errorMessages);
 
@@ -60,14 +60,17 @@ router.get('/:id', async (req, res, next) => {
  */
 router.patch('/:id', async (req, res, next) => {
 	try {
+		const id = req.params.id;
+		if (!isValidObjectId(id)) return res.send('Character not found');
+
 		const { name, occupation, cartoon, weapon } = req.body;
 		const updatedCharacterData = {};
 		if (name) updatedCharacterData.name = name;
 		if (occupation) updatedCharacterData.occupation = occupation;
-		if (cartoon) updatedCharacterData.cartoon = cartoon;
+		if (cartoon !== undefined) updatedCharacterData.cartoon = cartoon;
 		if (weapon) updatedCharacterData.weapon = weapon;
 
-		const updatedCharacter = await Character.findByIdAndUpdate(req.params.id, updatedCharacterData, {new: true});
+		const updatedCharacter = await Character.findByIdAndUpdate(id, updatedCharacterData, {new: true});
 		if (updatedCharacter) res.json(updatedCharacter);
 		else res.send('Character not found')
 	} catch (error) {
